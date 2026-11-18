@@ -1845,11 +1845,27 @@ impl UnifiedExecProcessManager {
     }
 
     pub(crate) async fn terminate_process(&self, process_id: i32) -> bool {
+        self.terminate_process_matching(process_id, None).await
+    }
+
+    pub(crate) async fn terminate_terminal(&self, terminal: &TerminalSession) -> bool {
+        self.terminate_process_matching(terminal.process_id, Some(&terminal.process))
+            .await
+    }
+
+    async fn terminate_process_matching(
+        &self,
+        process_id: i32,
+        expected_process: Option<&Arc<UnifiedExecProcess>>,
+    ) -> bool {
         let (process, already_exited) = {
             let store = self.process_store.lock().await;
             let Some(entry) = store.processes.get(&process_id) else {
-                return false;
+                return expected_process.is_some();
             };
+            if expected_process.is_some_and(|expected| !Arc::ptr_eq(expected, &entry.process)) {
+                return true;
+            }
             (Arc::clone(&entry.process), entry.process.has_exited())
         };
 

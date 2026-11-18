@@ -384,6 +384,9 @@ impl MessageProcessor {
                 installation_id,
                 Arc::new(ModelCatalogSettings::disk(config.codex_home.to_path_buf())),
             );
+            let cli_python_repl_supported =
+                matches!(rpc_transport, AppServerRpcTransport::InProcess)
+                    && matches!(session_source, SessionSource::Cli | SessionSource::Exec);
             let manager = ThreadManager::new(
                 config.as_ref(),
                 startup,
@@ -422,6 +425,11 @@ impl MessageProcessor {
                 )),
                 None,
             );
+            let manager = if cli_python_repl_supported {
+                manager.with_cli_python_repl()
+            } else {
+                manager
+            };
             match code_mode_session_provider {
                 Some(provider) => manager.with_code_mode_session_provider(provider),
                 None => manager,

@@ -543,6 +543,10 @@ impl ExecCommandToolOutput {
         }
     }
 
+    pub(crate) fn model_output(&self) -> String {
+        self.truncated_output_with_policy(self.model_output_policy())
+    }
+
     pub(crate) fn truncated_output(&self, max_tokens: usize) -> String {
         self.truncated_output_with_policy(TruncationPolicy::Tokens(max_tokens))
     }

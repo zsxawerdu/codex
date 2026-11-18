@@ -542,6 +542,10 @@ pub enum Feature {
     GhostCommit,
     /// Removed compatibility flag for the deleted JavaScript REPL feature.
     JsRepl,
+    /// Enable a persistent Python REPL in the local CLI.
+    PythonRepl,
+    /// Expose Python as the only model tool in the local CLI.
+    PythonReplOnly,
     /// Removed compatibility flag for the deleted JavaScript REPL tool-only mode.
     JsReplToolsOnly,
     /// Legacy search-tool feature flag kept for backward compatibility.
@@ -877,6 +881,9 @@ impl Features {
     pub fn normalize_dependencies(&mut self) {
         if self.enabled(Feature::CodeModeOnly) && !self.enabled(Feature::CodeMode) {
             self.enable(Feature::CodeMode);
+        }
+        if self.enabled(Feature::PythonReplOnly) {
+            self.enable(Feature::PythonRepl);
         }
     }
 }
@@ -1294,6 +1301,34 @@ pub const FEATURES: &[FeatureSpec] = &[
         id: Feature::CwdRelativeTurnDiffs,
         key: "cwd_relative_turn_diffs",
         stage: Stage::UnderDevelopment,
+        default_enabled: false,
+    },
+    FeatureSpec {
+        id: Feature::PythonRepl,
+        key: "python_repl",
+        stage: if cfg!(any(target_os = "macos", target_os = "linux")) {
+            Stage::Experimental {
+                name: "Python REPL",
+                menu_description: "Let Codex run Python cells with live state in local CLI sessions.",
+                announcement: "Try persistent Python cells in the CLI with /experimental.",
+            }
+        } else {
+            Stage::UnderDevelopment
+        },
+        default_enabled: false,
+    },
+    FeatureSpec {
+        id: Feature::PythonReplOnly,
+        key: "python_repl_only",
+        stage: if cfg!(any(target_os = "macos", target_os = "linux")) {
+            Stage::Experimental {
+                name: "Python REPL only",
+                menu_description: "Give the model a single tool for running persistent Python cells.",
+                announcement: "Try Python as the only model tool in the CLI with /experimental.",
+            }
+        } else {
+            Stage::UnderDevelopment
+        },
         default_enabled: false,
     },
     FeatureSpec {

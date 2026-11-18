@@ -1283,6 +1283,12 @@
             "psp": {
               "type": "boolean"
             },
+            "python_repl": {
+              "type": "boolean"
+            },
+            "python_repl_only": {
+              "type": "boolean"
+            },
             "realtime_conversation": {
               "type": "boolean"
             },
@@ -8593,6 +8599,12 @@
           "type": "boolean"
         },
         "psp": {
+          "type": "boolean"
+        },
+        "python_repl": {
+          "type": "boolean"
+        },
+        "python_repl_only": {
           "type": "boolean"
         },
         "realtime_conversation": {

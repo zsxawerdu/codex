@@ -519,6 +519,14 @@ pub(super) async fn run_main_inner(
             strict_config,
         ))
         .await?;
+    if cfg!(any(target_os = "macos", target_os = "linux"))
+        && implicit_connection
+        && config.features.enabled(Feature::PythonRepl)
+        && !prepared_environment_manager.default_environment_is_remote()
+    {
+        app_server_target = AppServerTarget::Embedded;
+        daemon_exclusion.get_or_insert("Python REPL");
+    }
     if app_server_target.uses_embedded_network_policy() {
         embedded_network_policy.activate(&mut config);
     }
@@ -832,6 +840,7 @@ pub(super) async fn run_main_inner(
                 Some(daemon_startup::WSL_DRVFS_EXCLUSION) => "wsl_drvfs",
                 Some("this Windows launcher") => "windows_detach_restricted",
                 Some("daemon feature settings") => "daemon_compatibility",
+                Some("Python REPL") => "python_repl",
                 None if selection_reason == "auto_start_disabled" => {
                     "auto_start_disabled_no_daemon"
                 }

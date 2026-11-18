@@ -18,6 +18,7 @@ mod new_context_window;
 pub(crate) mod new_context_window_spec;
 mod plan;
 pub(crate) mod plan_spec;
+pub(crate) mod python_repl;
 mod request_permissions;
 mod request_plugin_install;
 pub(crate) mod request_plugin_install_spec;

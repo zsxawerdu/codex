@@ -49,6 +49,8 @@ use crate::tools::handlers::multi_agents_v2::ListAgentsHandler as ListAgentsHand
 use crate::tools::handlers::multi_agents_v2::SendMessageHandler as SendMessageHandlerV2;
 use crate::tools::handlers::multi_agents_v2::SpawnAgentHandler as SpawnAgentHandlerV2;
 use crate::tools::handlers::multi_agents_v2::WaitAgentHandler as WaitAgentHandlerV2;
+use crate::tools::handlers::python_repl::PythonReplHandler;
+use crate::tools::handlers::python_repl::PythonReplState;
 use crate::tools::handlers::tool_search_spec::ToolSearchSourceListing;
 use crate::tools::handlers::view_image_spec::ViewImageToolOptions;
 use crate::tools::hosted_spec::WebSearchToolOptions;
@@ -149,6 +151,43 @@ pub(crate) fn build_tool_router(
     };
     let mut registry = ToolRegistry::with_tool_policy(Arc::clone(&session.tool_policy));
     add_core_tool_sources(&context, &mut registry);
+    let python_repl = session
+        .services
+        .thread_extension_data
+        .get::<PythonReplState>()
+        .is_some()
+        && PythonReplHandler::available(turn_context, environments)
+        && registry
+            .registered_tool(&ToolName::plain("exec_command"))
+            .is_some()
+        && registry
+            .registered_tool(&ToolName::plain("write_stdin"))
+            .is_some();
+    if PythonReplHandler::only_tool(turn_context) {
+        let mut only = ToolRegistry::with_tool_policy(Arc::clone(&session.tool_policy));
+        if python_repl {
+            only.add(PythonReplHandler);
+        }
+        if only
+            .registered_tool(&PythonReplHandler.tool_name())
+            .is_none()
+        {
+            return Err(CodexErrorDetails::InvalidRequest(
+                "Python-only mode requires an enabled local Python REPL tool.".into(),
+            )
+            .into());
+        }
+        return finalize_tool_router(
+            turn_context,
+            model_info,
+            only,
+            Vec::new(),
+            &session.services.tool_search_handler_cache,
+        );
+    }
+    if python_repl {
+        registry.add(PythonReplHandler);
+    }
 
     let registered_mcp_tools = session.services.mcp_handler_cache.append_mcp_tools(
         mcp,

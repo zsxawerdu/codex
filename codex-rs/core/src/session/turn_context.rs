@@ -445,6 +445,12 @@ impl TurnContext {
         let session_telemetry = step_settings.telemetry(&self.session_telemetry);
         let extension_data = Arc::new(codex_extension_api::ExtensionData::new(sub_id.clone()));
         extension_data.insert_arc(self.skills_snapshot());
+        if let Some(python_repl) = self
+            .extension_data
+            .get::<crate::tools::handlers::python_repl::PythonReplState>()
+        {
+            extension_data.insert_arc(python_repl);
+        }
         if let Some(discovery) = self.extension_data.get::<HostSkillDiscovery>() {
             extension_data.insert_arc(discovery);
         }
@@ -1469,6 +1475,13 @@ impl Session {
         turn_context.overridden_direct_only_tool_namespaces =
             overridden_direct_only_tool_namespaces;
         turn_context.code_mode_available = self.services.code_mode_service.is_available();
+        if let Some(python_repl) = self
+            .services
+            .thread_extension_data
+            .get::<crate::tools::handlers::python_repl::PythonReplState>()
+        {
+            turn_context.extension_data.insert_arc(python_repl);
+        }
         turn_context.extension_data.insert(trusted_plugin_roots);
         turn_context.active_host_plugin_identities = Some(
             plugin_outcome

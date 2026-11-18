@@ -1076,6 +1076,13 @@ async fn dispatch_cli(
         .clone()
         .and_then(|path| AbsolutePathBuf::from_absolute_path(path).ok());
     reject_unsupported_worktree_for_subcommand(interactive.shared.worktree, &subcommand)?;
+    if std::env::args_os().next().is_some_and(|argv0| {
+        std::path::Path::new(&argv0).file_name() == Some(std::ffi::OsStr::new("ixode"))
+    }) {
+        root_config_overrides
+            .raw_overrides
+            .insert(0, "features.python_repl_only=true".to_string());
+    }
     // Fold --enable/--disable into config overrides so they flow to all subcommands.
     let toggle_overrides = feature_toggles.to_overrides()?;
     root_config_overrides.raw_overrides.extend(toggle_overrides);

@@ -621,6 +621,7 @@ pub(crate) struct ThreadManagerState {
     attestation_provider: Option<Arc<dyn AttestationProvider>>,
     external_time_provider: Option<Arc<dyn TimeProvider>>,
     session_source: SessionSource,
+    cli_python_repl_supported: bool,
     installation_id: String,
     analytics_events_client: Option<AnalyticsEventsClient>,
     // Captures submitted ops for testing purpose when test mode is enabled.
@@ -724,6 +725,7 @@ impl ThreadManager {
                 auth_manager,
                 runtime_auth,
                 session_source,
+                cli_python_repl_supported: false,
                 installation_id,
                 analytics_events_client,
                 ops_log: should_use_test_thread_manager_behavior()
@@ -731,6 +733,14 @@ impl ThreadManager {
             }),
             _test_codex_home_guard: None,
         }
+    }
+
+    /// Enable the experimental Python tool for threads owned by an embedded CLI.
+    pub fn with_cli_python_repl(mut self) -> Self {
+        Arc::get_mut(&mut self.state)
+            .expect("the thread manager is still being constructed")
+            .cli_python_repl_supported = true;
+        self
     }
 
     /// Generate every new thread identifier with the caller-provided factory.
@@ -949,6 +959,7 @@ impl ThreadManager {
                 external_time_provider: None,
                 auth_manager,
                 session_source: SessionSource::Exec,
+                cli_python_repl_supported: false,
                 installation_id,
                 analytics_events_client: None,
                 ops_log: should_use_test_thread_manager_behavior()
@@ -2921,6 +2932,12 @@ impl ThreadManagerState {
             ) => manager,
         };
         let registered = Arc::new(AtomicBool::new(false));
+        if self.cli_python_repl_supported
+            && matches!(session_source, SessionSource::Cli | SessionSource::Exec)
+        {
+            thread_extension_init
+                .insert(crate::tools::handlers::python_repl::PythonReplState::default());
+        }
         thread_extension_init.insert(ThreadRegistrationReceipt(Arc::clone(&registered)));
         let spawn_result = Session::spawn(SessionSpawnArgs {
             attached_thread,
